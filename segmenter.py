@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import joblib
 import pandas as pd
 from PIL import Image
+import sklearn
 
 def open_image(image_file):
     # Open the image using PIL
