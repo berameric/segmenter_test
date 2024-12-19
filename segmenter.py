@@ -17,7 +17,7 @@ def open_image(image_file):
         image_np = image_np[:, :, :3]
 
     # resize the image to 25% of its original size
- 
+
     return image_np
 
 
@@ -137,14 +137,8 @@ def process_images(masked_image, original_image, model):
 
     # Make predictions
     y_pred = model.predict(X_pred)
- 
-
-    expected_size = original_image.shape[0] * original_image.shape[1]
-    if y_pred.size != expected_size:
-        y_pred = np.resize(y_pred, (original_image.shape[0], original_image.shape[1]))
-    else:
-        y_pred = y_pred.reshape(original_image.shape[0], original_image.shape[1])
-
+    
+    y_pred = y_pred.reshape(original_image.shape[0], original_image.shape[1])
     y_pred[maskL] = 0
 
     return y_pred
