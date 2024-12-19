@@ -186,7 +186,7 @@ def main():
                     # Create figure with discrete colormap for layers
                     fig, ax = plt.subplots(figsize=(12, 8))
                     num_layers = int(result.max())
-                    im = ax.imshow(result, cmap='viridis', vmin=0, vmax=num_layers)
+                    im = ax.imshow(result, cmap='turbo', vmin=0, vmax=num_layers)
                     ax.set_title('2D Material Layer Detection Result')
                     ax.axis('off')
                     
