@@ -137,7 +137,14 @@ def process_images(masked_image, original_image, model):
 
     # Make predictions
     y_pred = model.predict(X_pred)
-    y_pred = y_pred.reshape(original_image.shape[0], original_image.shape[1])
+ 
+
+    expected_size = original_image.shape[0] * original_image.shape[1]
+    if y_pred.size != expected_size:
+        y_pred = np.resize(y_pred, (original_image.shape[0], original_image.shape[1]))
+    else:
+        y_pred = y_pred.reshape(original_image.shape[0], original_image.shape[1])
+
     y_pred[maskL] = 0
 
     return y_pred
