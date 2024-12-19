@@ -17,7 +17,7 @@ def open_image(image_file):
         image_np = image_np[:, :, :3]
 
     # resize the image to 25% of its original size
-    image_np = cv2.resize(image_np, (0, 0), fx=0.50, fy=0.50, interpolation=cv2.INTER_AREA)
+ 
     return image_np
 
 
