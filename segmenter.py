@@ -17,7 +17,7 @@ def open_image(image_file):
         image_np = image_np[:, :, :3]
 
     # resize the image to 25% of its original size
-
+    image_np = cv2.resize(image_np, (0, 0), fx=0.50, fy=0.50, interpolation=cv2.INTER_AREA)
     return image_np
 
 
@@ -103,35 +103,44 @@ def process_images(masked_image, original_image, model):
     non_masked_area_rgb = np.array(non_masked_area_color, dtype=np.float32) / 255.0
     non_masked_area_luv = rgb_to_luv(non_masked_area_rgb.reshape(1, 1, 3))[0]
 
-    # Create features for prediction
-    L_diff = masked_area_luv[:, 0] - non_masked_area_luv[0]
-    u_diff = masked_area_luv[:, 1] - non_masked_area_luv[1]
-    v_diff = masked_area_luv[:, 2] - non_masked_area_luv[2]
+    # Create Luv image
+    luv_image = np.zeros_like(original_image, dtype=np.float32)
+    luv_image[maskArea == 1] = masked_area_luv
 
-    # Create mask for L differences
+    L_component = luv_image[..., 0]
+    u_component = luv_image[..., 1]
+    v_component = luv_image[..., 2]
+
+    # Calculate differences
+    L_diff = (L_component - non_masked_area_luv[0])
     maskL = L_diff <= 0
-    L_diff[maskL] = 0
+    L_diff[L_diff <= 0] = 0
+
+    u_diff = u_component - non_masked_area_luv[1]
+    v_diff = v_component - non_masked_area_luv[2]
+
     u_diff[maskL] = 0
     v_diff[maskL] = 0
 
     # Prepare data for prediction
-    X_pred = pd.DataFrame({
-        'delta_e_L': L_diff,
-        'delta_e_u': u_diff,
-        'delta_e_v': v_diff
+    df_pred = pd.DataFrame({
+        'delta_e_L': L_diff.flatten(),
+        'delta_e_u': u_diff.flatten(),
+        'delta_e_v': v_diff.flatten()
     })
 
-    # Get predictions - LightGBM will return probabilities for each class
-    y_pred_proba = model.predict(X_pred)
-    
-    # Convert probabilities to class labels (0-based index of max probability)
-    y_pred_classes = np.array([np.argmax(p) for p in y_pred_proba])
-    
-    # Create the final result image
-    result = np.zeros(maskArea.shape)
-    result[maskArea == 1] = y_pred_classes + 1  # Add 1 to convert from 0-based to 1-based layer numbers
-    
-    return result
+    df_pred['delta_e_L_squared'] = df_pred['delta_e_L'] ** 2
+    df_pred['delta_e_u_squared'] = df_pred['delta_e_u'] ** 2
+    df_pred['delta_e_v_squared'] = df_pred['delta_e_v'] ** 2
+
+    X_pred = df_pred[['delta_e_L', 'delta_e_L_squared', 'delta_e_u', 'delta_e_u_squared', 'delta_e_v', 'delta_e_v_squared']]
+
+    # Make predictions
+    y_pred = model.predict(X_pred)
+    y_pred = y_pred.reshape(original_image.shape[0], original_image.shape[1])
+    y_pred[maskL] = 0
+
+    return y_pred
 
 def main():
     st.set_page_config(page_title="2D Material Layer Detection", layout="wide")
@@ -183,20 +192,16 @@ def main():
                     model = joblib.load(model_file)
                     result = process_images(masked_image, original_image, model)
 
-                    # Create figure with discrete colormap for layers
-                    fig, ax = plt.subplots(figsize=(12, 8))
-                    num_layers = int(result.max())
-                    im = ax.imshow(result, cmap='turbo', vmin=0, vmax=num_layers)
-                    ax.set_title('2D Material Layer Detection Result')
-                    ax.axis('off')
-                    
-                    # Create colorbar with integer ticks for layers
-                    cbar = fig.colorbar(im, ax=ax, ticks=range(num_layers + 1))
-                    cbar.set_label('Number of Layers')
-                    cbar.set_ticklabels([f'Layer {i}' if i > 0 else 'Background' for i in range(num_layers + 1)])
+                fig, ax = plt.subplots(figsize=(12, 8))
+                im = ax.imshow(result, cmap='turbo')
+                ax.set_title('2D Material Layer Detection Result')
+                ax.axis('off')
+                cbar = fig.colorbar(im, ax=ax)
+                cbar.set_label('Prediction Value')
 
-                    st.pyplot(fig)
-                    st.success("Image processing completed successfully!")
+                st.pyplot(fig)
+
+                st.success("Image processing completed successfully!")
             except Exception as e:
                 st.error(f"An error occurred during processing: {str(e)}")
         else:
@@ -207,7 +212,7 @@ def main():
         st.write("""
         1. Upload a masked image of your 2D material sample.
         2. Upload the corresponding original image.
-        3. Upload your trained LightGBM model file (.joblib format).
+        3. Upload your trained model file (.joblib format).
         4. Click 'Process Images' to start the detection.
         5. The result will be displayed as a color-coded image showing the detected layers.
         """)
