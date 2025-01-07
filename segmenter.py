@@ -133,7 +133,7 @@ def process_images(masked_image, original_image, model):
     df_pred['delta_e_u_squared'] = df_pred['delta_e_u'] ** 2
     df_pred['delta_e_v_squared'] = df_pred['delta_e_v'] ** 2
 
-    X_pred = df_pred[['delta_e_L', 'delta_e_L_squared', 'delta_e_u', 'delta_e_u_squared', 'delta_e_v', 'delta_e_v_squared']]
+    X_pred = df_pred[['delta_e_L',  'delta_e_u', 'delta_e_v']]
 
     # Make predictions
     y_pred = model.predict(X_pred)
