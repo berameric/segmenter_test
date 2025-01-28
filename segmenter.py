@@ -96,6 +96,8 @@ def process_images(masked_image, original_image, model):
     masked_area = original_image[maskArea == 1]
     non_masked_area = original_image[maskArea == 0]
 
+    original_image = cv2.GaussianBlur(original_image, (5, 5), 1)
+
     non_masked_area_color = np.array(most_common_color(non_masked_area))
 
     # Convert to Luv color space
