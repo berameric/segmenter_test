@@ -96,7 +96,7 @@ def process_images(masked_image, original_image, model):
     masked_area = original_image[maskArea == 1]
     non_masked_area = original_image[maskArea == 0]
 
-    original_image = cv2.GaussianBlur(original_image, (5, 5), 1)
+    #original_image = cv2.GaussianBlur(original_image, (5, 5), 1)
 
     non_masked_area_color = np.array(most_common_color(non_masked_area))
 
@@ -135,7 +135,7 @@ def process_images(masked_image, original_image, model):
     df_pred['delta_e_u_squared'] = df_pred['delta_e_u'] ** 2
     df_pred['delta_e_v_squared'] = df_pred['delta_e_v'] ** 2
 
-    X_pred = df_pred[['delta_e_L',  'delta_e_u', 'delta_e_v']]
+    X_pred = df_pred[['delta_e_L',  'delta_e_u']]
 
     # Make predictions
     y_pred = model.predict(X_pred)
